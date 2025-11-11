@@ -103,7 +103,6 @@
   async function api(action, payload){
     const r = await fetch(API_URL, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({action, idToken, payload})
     });
     const j = await r.json();
