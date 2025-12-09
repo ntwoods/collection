@@ -324,19 +324,40 @@ async function submitFinal(){
 
   if(pendingAction==="WillPay"){
     const d = document.getElementById("inpDays").value;
-    if(!d || d<1){ btn.disabled=false; btn.innerHTML="Submit"; return alert("Enter valid days!"); }
+    if(!d || d<1){
+      btn.disabled=false; btn.innerHTML="Submit";
+      return alert("Enter valid days!");
+    }
     payload.days = d;
   }
 
   if(pendingAction==="NotConnected"){
     const dt = document.getElementById("inpNCDate").value;
-    if(!dt){ btn.disabled=false; btn.innerHTML="Submit"; return alert("Select next follow-up date & time!"); }
+    if(!dt){
+      btn.disabled=false; btn.innerHTML="Submit";
+      return alert("Select next follow-up date & time!");
+    }
     payload.nextDateTime = dt;
   }
 
   await api("markAction",payload);
 
-  items.splice(selected.idx,1);
+  // ✅ UI behaviour per action
+  if (pendingAction === "NotConnected") {
+    // Card ko remove nahi karna, bas follow-up card bana do
+    const next = payload.nextDateTime;
+    const dueISO = next ? new Date(next).toISOString() : null;
+
+    selected.it.source    = "FollowUp";
+    selected.it.highlight = true;
+    selected.it.dueDate   = dueISO;
+
+    items[selected.idx] = selected.it;  // update in place
+  } else {
+    // Done / WillPay / LedgerRequired → list se hata do
+    items.splice(selected.idx,1);
+  }
+
   render();
   closeModal();
 
