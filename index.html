@@ -3,37 +3,82 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Follow-up Portal</title>
+<title>Collection Portal</title>
+
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <style>
-  :root{--bg:#f7fbff;--card:#fff;--blue:#2563eb;--blueSoft:#e6f0ff;--chip:#eef6ff;--chipB:#cfe3ff;--muted:#64748b}
-  *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
-  body{margin:0;background:linear-gradient(180deg,#fff,var(--bg));color:#0f172a}
-  header{padding:16px 20px;border-bottom:1px solid #e6eefc;display:flex;gap:12px;align-items:center}
-  .badge{background:var(--blueSoft);color:var(--blue);padding:4px 10px;border-radius:999px;font-weight:600}
+  :root{
+    --bg:#f7fbff;
+    --card:#fff;
+    --blue:#2563eb;
+    --chip:#eef6ff;
+    --chipB:#cfe3ff;
+    --muted:#64748b;
+
+    --yellow:#fff6d6;
+    --green:#e5ffe8;
+  }
+
+  *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI;}
+
+  body{
+    margin:0;
+    background:linear-gradient(180deg,#fff,var(--bg));
+    color:#0f172a;
+  }
+
+  header{
+    padding:16px 20px;
+    border-bottom:1px solid #e6eefc;
+    display:flex;
+    gap:12px;
+    align-items:center;
+  }
+
+  .badge{
+    background:#e6f0ff;
+    color:var(--blue);
+    padding:4px 10px;
+    border-radius:999px;
+    font-weight:600;
+  }
+
   .container{max-width:1100px;margin:24px auto;padding:0 16px}
   .card{background:var(--card);border:1px solid #e6eefc;border-radius:16px;box-shadow:0 6px 18px rgba(37,99,235,.08);padding:18px}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
-  .chip{background:var(--chip);border:1px solid var(--chipB);border-radius:12px;padding:12px;cursor:pointer;transition:transform .08s,box-shadow .08s}
+
+  .chip{
+    background:#fff;
+    border:1px solid var(--chipB);
+    border-radius:12px;
+    padding:12px;
+    cursor:pointer;
+    transition:transform .08s,box-shadow .08s;
+  }
   .chip:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(37,99,235,.12)}
   .chip.follow{background:#eaf3ff;border-color:#9ac2ff;outline:2px solid #bfd7ff}
-  .chip-sub{ display:none; }
-  .title{font-weight:700}
-  .meta{font-size:12px;color:var(--muted);margin-top:6px}
+  .chip.future-green{background:var(--green)}
+  .chip.future-yellow{background:var(--yellow)}
+
   .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .btn{border:1px solid #cfe3ff;background:#fff;color:#2563eb;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer}
   .btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}
+
   /* modal */
   .back{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;padding:16px}
-  .modal{background:#fff;border:1px solid #e6eefc;border-radius:16px;max-width:460px;width:100%;padding:18px}
-  input[type="date"],input[type="text"]{padding:8px;border:1px solid #cfe3ff;border-radius:8px}
+  .modal{background:#fff;border:1px solid #e6eefc;border-radius:16px;max-width:480px;width:100%;padding:18px}
+  input,select,textarea{padding:8px;border:1px solid #cfe3ff;border-radius:8px;width:100%}
 </style>
 </head>
+
 <body>
+
 <header>
-  <h3 style="margin:0">Call Follow-ups</h3>
+  <h3 style="margin:0">Collection Follow-ups</h3>
   <span id="who" class="badge">Sign-in required</span>
   <span id="today" class="badge"></span>
+
   <div style="margin-left:auto" class="toolbar">
     <div id="gBtn"></div>
     <button class="btn" id="btnRefresh">Refresh</button>
@@ -47,6 +92,7 @@
       <span class="badge" id="count">0 items</span>
       <span id="countdown" style="color:#64748b"></span>
     </div>
+
     <div class="grid" id="grid"></div>
   </div>
 </div>
@@ -54,143 +100,221 @@
 <!-- Modal -->
 <div class="back" id="mBack">
   <div class="modal">
-    <h3 id="mTitle" style="margin:0 0 8px 0">Action</h3>
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
-      <button class="btn primary" id="mDone">Done</button>
-      <button class="btn" id="mUrgent">Urgent Follow-Up</button>
+
+    <h3 id="mTitle" style="margin:0 0 12px 0">Action</h3>
+
+    <!-- Action Buttons -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn primary" id="actDone">Done</button>
+      <button class="btn" id="actWillPay">Will Pay After X Days</button>
+      <button class="btn" id="actNotConn">Not Connected</button>
+      <button class="btn" id="actLedger">Ledger Required</button>
       <button class="btn" id="mCancel" style="margin-left:auto">Cancel</button>
     </div>
-    <div id="urgent" style="display:none">
-      <div style="display:flex;gap:10px;align-items:center;margin:8px 0">
-        <label style="color:#64748b">Date:</label>
-        <input type="date" id="fDate">
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;margin:8px 0">
-        <input type="text" id="fNote" placeholder="Note (optional)" style="flex:1">
-        <button class="btn primary" id="mSchedule">Schedule</button>
-      </div>
-      <div id="hint" style="color:#64748b;font-size:12px"></div>
+
+    <!-- Dynamic Inputs -->
+    <div id="secDays" style="display:none;margin-bottom:10px">
+      <label style="font-size:13px;color:var(--muted)">No. of Days</label>
+      <input type="number" id="inpDays" min="1" placeholder="Enter days"/>
     </div>
+
+    <div id="secNC" style="display:none;margin-bottom:10px">
+      <label style="font-size:13px;color:var(--muted)">Next Follow-up Date & Time</label>
+      <input type="datetime-local" id="inpNCDate"/>
+    </div>
+
+    <div style="margin-bottom:10px">
+      <label style="font-size:13px;color:var(--muted)">Remark (optional)</label>
+      <textarea id="inpRemark" rows="3"></textarea>
+    </div>
+
+    <button class="btn primary" style="width:100%" id="submitFinal">Submit</button>
+
   </div>
 </div>
 
 <script>
-  // ====== CONFIG (REPLACE THIS) ======
-  const API_URL   = 'https://script.google.com/macros/s/AKfycbwXj_bTIPzbZSa1u1NDHJDE15KbjW0zlqPq4QS1eq4LTUEWCGTvEOcHujDViGKLrb8k/exec';
-  const CLIENT_ID = '360849757137-agopfs0m8rgmcj541ucpg22btep5olt3.apps.googleusercontent.com';
+/* ---------- CONFIG ---------- */
+const API_URL   = "https://script.google.com/macros/s/AKfycbxUrOkj5uOyJCGnBe1g9KKg30dzgBB7PpR8lUsGPVSYtR2oeXvUMCYDy0uPmW5oPth_/exec";
+const CLIENT_ID = "360849757137-agopfs0m8rgmcj541ucpg22btep5olt3.apps.googleusercontent.com";
 
-  // ====== STATE ======
-  let idToken=null, userEmail=null, items=[], selected=null;
+/* ---------- STATE ---------- */
+let idToken=null, userEmail=null, items=[], selected=null, pendingAction=null;
 
-  // Google button:
-  window.onload = () => {
-    google.accounts.id.initialize({ client_id: CLIENT_ID, callback: handleCred });
-    google.accounts.id.renderButton(document.getElementById('gBtn'), { theme:'outline', size:'large', text:'continue_with' });
-    document.getElementById('btnRefresh').onclick = load;
-    document.getElementById('btnClose').onclick   = closeNow;
-    startCountdown();
+/* ---------- INIT ---------- */
+window.onload = () => {
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: handleCred
+  });
+  google.accounts.id.renderButton(document.getElementById("gBtn"), {
+    theme:"outline", size:"large"
+  });
+
+  document.getElementById("btnRefresh").onclick = load;
+  document.getElementById("btnClose").onclick   = closeNow;
+
+  startCountdown();
+};
+
+/* ---------- GOOGLE LOGIN ---------- */
+function handleCred(resp){
+  idToken = resp.credential;
+  const p = JSON.parse(atob(idToken.split('.')[1]));
+  userEmail = p.email;
+  document.getElementById("who").textContent = userEmail;
+  load();
+}
+
+/* ---------- API WRAPPER ---------- */
+async function api(action,payload){
+  const r = await fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({action,idToken,payload})
+  });
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.error);
+  return j.data;
+}
+
+/* ---------- LOAD DASHBOARD ---------- */
+async function load(){
+  const data = await api("getDashboard");
+  items = data.items;
+  render();
+}
+
+/* ---------- RENDER CARDS ---------- */
+function render(){
+  const g = document.getElementById("grid");
+  g.innerHTML = "";
+
+  items.forEach((it,idx)=>{
+    const d = document.createElement("div");
+
+    let cls = "chip";
+    if(it.highlight) cls += " follow";
+    if(it.futureGreen) cls += " future-green";
+    if(it.futureYellow) cls += " future-yellow";
+
+    d.className = cls;
+
+    d.innerHTML = `
+      <div style="font-weight:700">${sanitize(it.party)}</div>
+      <div class="meta">${it.source ? it.source : "Today"}</div>
+      ${it.dueDate ? `<div class="meta">Due: ${format(it.dueDate)}</div>` : ""}
+    `;
+
+    d.onclick = ()=> openModal(it,idx);
+    g.appendChild(d);
+  });
+
+  document.getElementById("count").textContent = items.length+" items";
+}
+
+/* ---------- SANITIZE ---------- */
+function sanitize(s){
+  return (""+s).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));
+}
+function format(x){
+  const d = new Date(x);
+  return d.toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+}
+
+/* ---------- MODAL ---------- */
+function openModal(it,idx){
+  selected = {it,idx};
+  pendingAction = null;
+
+  document.getElementById("mTitle").textContent = it.party;
+  document.getElementById("secDays").style.display="none";
+  document.getElementById("secNC").style.display="none";
+
+  document.getElementById("inpRemark").value="";
+  document.getElementById("inpDays").value="";
+  document.getElementById("inpNCDate").value="";
+
+  document.getElementById("mBack").style.display="flex";
+
+  document.getElementById("actDone").onclick = ()=> choose("Done");
+  document.getElementById("actWillPay").onclick = ()=> choose("WillPay");
+  document.getElementById("actNotConn").onclick = ()=> choose("NotConnected");
+  document.getElementById("actLedger").onclick = ()=> choose("LedgerRequired");
+  document.getElementById("mCancel").onclick = closeModal;
+
+  document.getElementById("submitFinal").onclick = submitFinal;
+}
+
+function choose(a){
+  pendingAction = a;
+
+  document.getElementById("secDays").style.display = (a==="WillPay" ? "block":"none");
+  document.getElementById("secNC").style.display   = (a==="NotConnected" ? "block":"none");
+}
+
+function closeModal(){
+  document.getElementById("mBack").style.display="none";
+}
+
+/* ---------- SUBMIT ---------- */
+async function submitFinal(){
+  if(!pendingAction) return alert("Select action first.");
+
+  let payload = {
+    source  : selected.it.source,
+    rowIndex: selected.it.rowIndex,
+    party   : selected.it.party,
+    action  : pendingAction,
+    remark  : document.getElementById("inpRemark").value.trim()
   };
 
-  function handleCred(resp){
-    idToken = resp.credential;
-    try{
-      const p = JSON.parse(atob(idToken.split('.')[1]));
-      userEmail = p.email || '';
-      document.getElementById('who').textContent = userEmail || 'Signed in';
-    }catch{}
-    load();
+  if(pendingAction==="WillPay"){
+    const d = parseInt(document.getElementById("inpDays").value);
+    if(!d || d<1) return alert("Enter valid days.");
+    payload.days = d;
   }
 
-  async function api(action, payload){
-    const r = await fetch(API_URL, {
-      method:'POST',
-      body: JSON.stringify({action, idToken, payload})
-    });
-    const j = await r.json();
-    if(!j.ok) throw new Error(j.error || 'API error');
-    return j.data;
+  if(pendingAction==="NotConnected"){
+    const dt = document.getElementById("inpNCDate").value;
+    if(!dt) return alert("Select date & time.");
+    payload.nextDateTime = dt;
   }
 
-  async function load(){
-    if(!idToken) return alert('Please sign in.');
-    const data = await api('getDashboard');
-    userEmail = data.email;
-    document.getElementById('who').textContent = userEmail;
-    document.getElementById('today').textContent = 'Today: '+new Date().toISOString().slice(0,10);
-    items = data.items || [];
-    render();
-  }
+  await api("markAction",payload);
 
-  function render(){
-    const g = document.getElementById('grid'); g.innerHTML='';
-    document.getElementById('count').textContent = items.length+' items';
-    items.forEach((it,idx)=>{
-      const d = document.createElement('div');
-      d.className = 'chip'+(it.highlight?' follow':'');
-      d.innerHTML = `<div class="title">${esc(it.party)}</div>
-                     <div class="meta"><b>${it.source}</b>${it.dueDate ? ' • Due: '+fmt(it.dueDate):''}</div>`;
-      d.onclick = ()=> openModal(it, idx);
-      g.appendChild(d);
-    });
-  }
+  items.splice(selected.idx,1);
+  render();
+  closeModal();
+}
 
-  function esc(s){return (''+s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
-  function fmt(x){const d=new Date(x);return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
+/* ---------- FORCE CLOSE ---------- */
+async function closeNow(){
+  if(!confirm("Force close remaining followups?")) return;
+  await api("closeOutUser");
+  load();
+}
 
-  // Modal
-  function openModal(it, idx){
-    selected = {it, idx};
-    document.getElementById('mTitle').textContent = it.party;
-    document.getElementById('urgent').style.display='none';
-    document.getElementById('mBack').style.display='flex';
-    document.getElementById('mDone').onclick = async ()=>{
-      await api('markAction', {source:it.source,rowIndex:it.rowIndex,party:it.party,action:'Done'});
-      items.splice(idx,1); closeModal(); render();
-    };
-    document.getElementById('mUrgent').onclick = showUrgent;
-    document.getElementById('mCancel').onclick = closeModal;
-  }
-  function showUrgent(){
-    const pane = document.getElementById('urgent'); pane.style.display='block';
-    const f = document.getElementById('fDate');
-    const hint = document.getElementById('hint');
-    const today = new Date(); today.setHours(0,0,0,0);
-    const max7 = new Date(today); max7.setDate(max7.getDate()+7);
-    const sun = nextSunday(today);
-    const cap = new Date(Math.min(max7,sun));
-    f.min = iso(today); f.max = iso(cap);
-    hint.textContent = `Select date till ${cap.toDateString()} (<=7 days and not beyond coming Sunday).`;
-    document.getElementById('mSchedule').onclick = async ()=>{
-      if(!f.value) return alert('Select date');
-      const note = document.getElementById('fNote').value || '';
-      await api('markAction',{source:selected.it.source,rowIndex:selected.it.rowIndex,party:selected.it.party,action:'UrgentFollowUp',followDateISO:f.value,note});
-      closeModal();
-    };
-  }
-  function closeModal(){ document.getElementById('mBack').style.display='none'; }
-  function iso(d){ return d.toISOString().slice(0,10); }
-  function nextSunday(d){ const delta=(7-d.getDay())%7; const x=new Date(d); x.setDate(x.getDate()+delta); x.setHours(23,59,59,999); return x; }
+/* ---------- COUNTDOWN ---------- */
+function startCountdown(){
+  const el = document.getElementById("countdown");
+  function tick(){
+    const now=new Date();
+    const tgt=new Date();
+    tgt.setHours(19,0,0,0);
 
-  // Force close
-  async function closeNow(){
-    if(!idToken) return alert('Sign in first.');
-    if(!confirm('Mark remaining as Not-Done now?')) return;
-    const res = await api('closeOutUser');
-    alert('Auto-closed '+(res.closed||0)+' items.');
-    load();
-  }
+    if(now>tgt){ el.textContent="Closing completed"; return; }
 
-  // Countdown (visual)
-  function startCountdown(){
-    const el = document.getElementById('countdown');
-    function tick(){
-      const now=new Date(); const tgt=new Date(); tgt.setHours(19,0,0,0);
-      if(now>tgt){ el.textContent='Auto close done for today.'; return; }
-      const ms=tgt-now; const h=Math.floor(ms/3600000), m=Math.floor(ms%3600000/60000), s=Math.floor(ms%60000/1000);
-      el.textContent=`Auto close in ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      setTimeout(tick,1000);
-    } tick();
+    const ms=tgt-now;
+    const h=Math.floor(ms/3600000),
+          m=Math.floor((ms%3600000)/60000),
+          s=Math.floor((ms%60000)/1000);
+
+    el.textContent = `Auto close in ${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    setTimeout(tick,1000);
   }
+  tick();
+}
 </script>
+
 </body>
 </html>
