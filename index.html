@@ -105,7 +105,7 @@
 
     <!-- Action Buttons -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <button class="btn primary" id="actDone">Done</button>
+      <button class="btn" id="actDone">Done</button>
       <button class="btn" id="actWillPay">Will Pay After X Days</button>
       <button class="btn" id="actNotConn">Not Connected</button>
       <button class="btn" id="actLedger">Ledger Required</button>
@@ -226,9 +226,15 @@ function openModal(it,idx){
   selected = {it,idx};
   pendingAction = null;
 
+  // CLEAR active highlight from all action buttons
+  ["actDone","actWillPay","actNotConn","actLedger"].forEach(id=>{
+    document.getElementById(id).classList.remove("primary");
+  });
+
+  // Hide all sections initially
+  document.getElementById("secDays").style.display = "none";
+  document.getElementById("secNC").style.display = "none";
   document.getElementById("mTitle").textContent = it.party;
-  document.getElementById("secDays").style.display="none";
-  document.getElementById("secNC").style.display="none";
 
   document.getElementById("inpRemark").value="";
   document.getElementById("inpDays").value="";
@@ -245,12 +251,25 @@ function openModal(it,idx){
   document.getElementById("submitFinal").onclick = submitFinal;
 }
 
-function choose(a){
-  pendingAction = a;
+function choose(action){
+  pendingAction = action;
 
-  document.getElementById("secDays").style.display = (a==="WillPay" ? "block":"none");
-  document.getElementById("secNC").style.display   = (a==="NotConnected" ? "block":"none");
+  // Remove active style from all buttons
+  ["actDone","actWillPay","actNotConn","actLedger"].forEach(id=>{
+    document.getElementById(id).classList.remove("primary");
+  });
+
+  // Apply active style to selected button
+  if(action==="Done") document.getElementById("actDone").classList.add("primary");
+  if(action==="WillPay") document.getElementById("actWillPay").classList.add("primary");
+  if(action==="NotConnected") document.getElementById("actNotConn").classList.add("primary");
+  if(action==="LedgerRequired") document.getElementById("actLedger").classList.add("primary");
+
+  // Toggle input sections
+  document.getElementById("secDays").style.display   = (action==="WillPay" ? "block":"none");
+  document.getElementById("secNC").style.display     = (action==="NotConnected" ? "block":"none");
 }
+
 
 function closeModal(){
   document.getElementById("mBack").style.display="none";
