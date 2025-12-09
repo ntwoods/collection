@@ -15,7 +15,6 @@
     --chip:#eef6ff;
     --chipB:#cfe3ff;
     --muted:#64748b;
-
     --yellow:#fff6d6;
     --green:#e5ffe8;
   }
@@ -23,37 +22,27 @@
   *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI;}
 
   body{
-    margin:0;
-    background:linear-gradient(180deg,#fff,var(--bg));
-    color:#0f172a;
+    margin:0;background:linear-gradient(180deg,#fff,var(--bg));color:#0f172a;
   }
 
   header{
-    padding:16px 20px;
-    border-bottom:1px solid #e6eefc;
-    display:flex;
-    gap:12px;
-    align-items:center;
+    padding:16px 20px;border-bottom:1px solid #e6eefc;
+    display:flex;gap:12px;align-items:center;
   }
 
   .badge{
-    background:#e6f0ff;
-    color:var(--blue);
-    padding:4px 10px;
-    border-radius:999px;
-    font-weight:600;
+    background:#e6f0ff;color:var(--blue);
+    padding:4px 10px;border-radius:999px;font-weight:600
   }
 
   .container{max-width:1100px;margin:24px auto;padding:0 16px}
-  .card{background:var(--card);border:1px solid #e6eefc;border-radius:16px;box-shadow:0 6px 18px rgba(37,99,235,.08);padding:18px}
+  .card{background:var(--card);border:1px solid #e6eefc;border-radius:16px;
+    box-shadow:0 6px 18px rgba(37,99,235,.08);padding:18px}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 
   .chip{
-    background:#fff;
-    border:1px solid var(--chipB);
-    border-radius:12px;
-    padding:12px;
-    cursor:pointer;
+    background:#fff;border:1px solid var(--chipB);
+    border-radius:12px;padding:12px;cursor:pointer;
     transition:transform .08s,box-shadow .08s;
   }
   .chip:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(37,99,235,.12)}
@@ -62,13 +51,45 @@
   .chip.future-yellow{background:var(--yellow)}
 
   .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .btn{border:1px solid #cfe3ff;background:#fff;color:#2563eb;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer}
-  .btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}
+
+  .btn{
+    border:1px solid #cfe3ff;background:#fff;color:#2563eb;
+    padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;
+    transition:0.2s;
+  }
+  .btn.primary{
+    background:#2563eb;color:#fff;border-color:#2563eb;
+  }
+  .btn:disabled{
+    opacity:0.6;cursor:not-allowed;
+  }
 
   /* modal */
-  .back{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;padding:16px}
-  .modal{background:#fff;border:1px solid #e6eefc;border-radius:16px;max-width:480px;width:100%;padding:18px}
-  input,select,textarea{padding:8px;border:1px solid #cfe3ff;border-radius:8px;width:100%}
+  .back{
+    position:fixed;inset:0;background:rgba(15,23,42,.45);
+    display:none;align-items:center;justify-content:center;padding:16px;
+  }
+  .modal{
+    background:#fff;border:1px solid #e6eefc;border-radius:16px;
+    max-width:480px;width:100%;padding:18px;
+  }
+
+  input,select,textarea{
+    padding:8px;border:1px solid #cfe3ff;border-radius:8px;width:100%;
+  }
+
+  /* Spinner */
+  .spinner{
+    border:3px solid #e6e6e6;
+    border-top:3px solid #2563eb;
+    border-radius:50%;
+    width:16px;height:16px;
+    animation:spin 0.8s linear infinite;
+    display:inline-block;margin-right:8px;
+    vertical-align:middle;
+  }
+  @keyframes spin{100%{transform:rotate(360deg)}}
+
 </style>
 </head>
 
@@ -91,6 +112,11 @@
     <div class="toolbar">
       <span class="badge" id="count">0 items</span>
       <span id="countdown" style="color:#64748b"></span>
+    </div>
+
+    <!-- loader -->
+    <div id="pageLoader" style="display:none;text-align:center;padding:30px">
+      <div class="spinner"></div> Loading...
     </div>
 
     <div class="grid" id="grid"></div>
@@ -128,10 +154,13 @@
       <textarea id="inpRemark" rows="3"></textarea>
     </div>
 
-    <button class="btn primary" style="width:100%" id="submitFinal">Submit</button>
+    <button class="btn primary" style="width:100%" id="submitFinal">
+      Submit
+    </button>
 
   </div>
 </div>
+
 
 <script>
 /* ---------- CONFIG ---------- */
@@ -157,16 +186,17 @@ window.onload = () => {
   startCountdown();
 };
 
-/* ---------- GOOGLE LOGIN ---------- */
+/* ---------- LOGIN ---------- */
 function handleCred(resp){
   idToken = resp.credential;
   const p = JSON.parse(atob(idToken.split('.')[1]));
   userEmail = p.email;
+
   document.getElementById("who").textContent = userEmail;
   load();
 }
 
-/* ---------- API WRAPPER ---------- */
+/* ---------- API ---------- */
 async function api(action,payload){
   const r = await fetch(API_URL,{
     method:"POST",
@@ -179,12 +209,22 @@ async function api(action,payload){
 
 /* ---------- LOAD DASHBOARD ---------- */
 async function load(){
+  showPageLoader(true);
+
   const data = await api("getDashboard");
+
   items = data.items;
+  showPageLoader(false);
   render();
 }
 
-/* ---------- RENDER CARDS ---------- */
+/* loader */
+function showPageLoader(st){
+  document.getElementById("pageLoader").style.display = st ? "block":"none";
+  document.getElementById("grid").style.display = st ? "none":"grid";
+}
+
+/* ---------- RENDER ---------- */
 function render(){
   const g = document.getElementById("grid");
   g.innerHTML = "";
@@ -198,7 +238,6 @@ function render(){
     if(it.futureYellow) cls += " future-yellow";
 
     d.className = cls;
-
     d.innerHTML = `
       <div style="font-weight:700">${sanitize(it.party)}</div>
       <div class="meta">${it.source ? it.source : "Today"}</div>
@@ -212,10 +251,8 @@ function render(){
   document.getElementById("count").textContent = items.length+" items";
 }
 
-/* ---------- SANITIZE ---------- */
-function sanitize(s){
-  return (""+s).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));
-}
+/* Helpers */
+function sanitize(s){return(""+s).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));}
 function format(x){
   const d = new Date(x);
   return d.toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
@@ -226,27 +263,25 @@ function openModal(it,idx){
   selected = {it,idx};
   pendingAction = null;
 
-  // CLEAR active highlight from all action buttons
   ["actDone","actWillPay","actNotConn","actLedger"].forEach(id=>{
     document.getElementById(id).classList.remove("primary");
   });
 
-  // Hide all sections initially
-  document.getElementById("secDays").style.display = "none";
-  document.getElementById("secNC").style.display = "none";
-  document.getElementById("mTitle").textContent = it.party;
+  document.getElementById("secDays").style.display="none";
+  document.getElementById("secNC").style.display="none";
 
   document.getElementById("inpRemark").value="";
   document.getElementById("inpDays").value="";
   document.getElementById("inpNCDate").value="";
 
+  document.getElementById("mTitle").textContent = it.party;
   document.getElementById("mBack").style.display="flex";
 
-  document.getElementById("actDone").onclick = ()=> choose("Done");
-  document.getElementById("actWillPay").onclick = ()=> choose("WillPay");
-  document.getElementById("actNotConn").onclick = ()=> choose("NotConnected");
-  document.getElementById("actLedger").onclick = ()=> choose("LedgerRequired");
-  document.getElementById("mCancel").onclick = closeModal;
+  document.getElementById("actDone").onclick      = ()=> choose("Done");
+  document.getElementById("actWillPay").onclick   = ()=> choose("WillPay");
+  document.getElementById("actNotConn").onclick   = ()=> choose("NotConnected");
+  document.getElementById("actLedger").onclick    = ()=> choose("LedgerRequired");
+  document.getElementById("mCancel").onclick      = closeModal;
 
   document.getElementById("submitFinal").onclick = submitFinal;
 }
@@ -254,22 +289,18 @@ function openModal(it,idx){
 function choose(action){
   pendingAction = action;
 
-  // Remove active style from all buttons
   ["actDone","actWillPay","actNotConn","actLedger"].forEach(id=>{
     document.getElementById(id).classList.remove("primary");
   });
 
-  // Apply active style to selected button
-  if(action==="Done") document.getElementById("actDone").classList.add("primary");
-  if(action==="WillPay") document.getElementById("actWillPay").classList.add("primary");
+  if(action==="Done")         document.getElementById("actDone").classList.add("primary");
+  if(action==="WillPay")      document.getElementById("actWillPay").classList.add("primary");
   if(action==="NotConnected") document.getElementById("actNotConn").classList.add("primary");
   if(action==="LedgerRequired") document.getElementById("actLedger").classList.add("primary");
 
-  // Toggle input sections
-  document.getElementById("secDays").style.display   = (action==="WillPay" ? "block":"none");
-  document.getElementById("secNC").style.display     = (action==="NotConnected" ? "block":"none");
+  document.getElementById("secDays").style.display = (action==="WillPay" ? "block":"none");
+  document.getElementById("secNC").style.display   = (action==="NotConnected" ? "block":"none");
 }
-
 
 function closeModal(){
   document.getElementById("mBack").style.display="none";
@@ -277,7 +308,11 @@ function closeModal(){
 
 /* ---------- SUBMIT ---------- */
 async function submitFinal(){
-  if(!pendingAction) return alert("Select action first.");
+  if(!pendingAction) return alert("Please select any action.");
+
+  const btn = document.getElementById("submitFinal");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>Processing...`;
 
   let payload = {
     source  : selected.it.source,
@@ -288,14 +323,14 @@ async function submitFinal(){
   };
 
   if(pendingAction==="WillPay"){
-    const d = parseInt(document.getElementById("inpDays").value);
-    if(!d || d<1) return alert("Enter valid days.");
+    const d = document.getElementById("inpDays").value;
+    if(!d || d<1){ btn.disabled=false; btn.innerHTML="Submit"; return alert("Enter valid days!"); }
     payload.days = d;
   }
 
   if(pendingAction==="NotConnected"){
     const dt = document.getElementById("inpNCDate").value;
-    if(!dt) return alert("Select date & time.");
+    if(!dt){ btn.disabled=false; btn.innerHTML="Submit"; return alert("Select next follow-up date & time!"); }
     payload.nextDateTime = dt;
   }
 
@@ -304,6 +339,9 @@ async function submitFinal(){
   items.splice(selected.idx,1);
   render();
   closeModal();
+
+  btn.disabled = false;
+  btn.innerHTML = "Submit";
 }
 
 /* ---------- FORCE CLOSE ---------- */
