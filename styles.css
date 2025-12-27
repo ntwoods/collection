@@ -177,10 +177,10 @@ thead th{
   text-align:left;
   font-size:12px;
   padding:12px 12px;
-  background: rgba(11,16,32,.92);
-  border-bottom:1px solid rgba(35,48,90,.9);
   cursor:default;
   user-select:none;
+  background: rgba(255,255,255,.92);
+  border-bottom:1px solid var(--line);
 }
 tbody td{
   padding:12px 12px;
