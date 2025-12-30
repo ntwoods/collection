@@ -128,7 +128,7 @@
       <button class="btn" id="actDone">Done</button>
       <button class="btn" id="actWillPay">Will Pay After X Days</button>
       <button class="btn" id="actNotConn">Not Connected</button>
-      <button class="btn" id="actLedger">Ledger Required</button>
+      <button class="btn" id="actLedger">Not on Printed Sheet</button>
       <button class="btn" id="mCancel" style="margin-left:auto">Cancel</button>
     </div>
 
@@ -381,7 +381,7 @@ function openModal(it,idx){
   document.getElementById("actDone").onclick      = ()=> choose("Done");
   document.getElementById("actWillPay").onclick   = ()=> choose("WillPay");
   document.getElementById("actNotConn").onclick   = ()=> choose("NotConnected");
-  document.getElementById("actLedger").onclick    = ()=> choose("LedgerRequired");
+  document.getElementById("actLedger").onclick    = ()=> choose("NotOnPrintedSheet");
   document.getElementById("mCancel").onclick      = closeModal;
   document.getElementById("submitFinal").onclick  = submitFinal;
 }
@@ -396,7 +396,7 @@ function choose(action){
   if(action==="Done") document.getElementById("actDone").classList.add("primary");
   if(action==="WillPay") document.getElementById("actWillPay").classList.add("primary");
   if(action==="NotConnected") document.getElementById("actNotConn").classList.add("primary");
-  if(action==="LedgerRequired") document.getElementById("actLedger").classList.add("primary");
+  if(action==="NotOnPrintedSheet") document.getElementById("actLedger").classList.add("primary");
 
   document.getElementById("secDays").style.display = (action==="WillPay" ? "block":"none");
   document.getElementById("secNC").style.display   = (action==="NotConnected" ? "block":"none");
