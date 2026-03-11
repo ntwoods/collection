@@ -60,6 +60,21 @@
     .chip .title{font-weight:800;color:#0f172a;}
     .chip .meta{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4;}
     .chip .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+    .remark-toggle{
+      margin-top:4px;
+      padding:0;
+      border:0;
+      background:transparent;
+      color:var(--blue);
+      font-size:12px;
+      font-weight:700;
+      text-decoration:underline;
+      cursor:pointer;
+    }
+    .remark-more{
+      margin-top:4px;
+      padding-left:14px;
+    }
     .tag{
       font-size:11px;font-weight:800;
       border-radius:999px;padding:4px 8px;border:1px solid var(--border);
@@ -170,6 +185,7 @@ const WORK_END   = {h:18, m:30};
 let idToken=null, userEmail=null, items=[], selected=null, pendingAction=null, serverNowISO=null;
 let serverNowStartMs=null, clientStartMs=null;
 let tickTimer=null;
+const expandedRemarks = new Set();
 
 /* ---------- INIT ---------- */
 window.onload = () => {
@@ -233,6 +249,7 @@ async function load(){
   showPageLoader(true);
   const data = await api("getDashboard");
   items = data.items || [];
+  expandedRemarks.clear();
   serverNowISO = data.now || null;
   if(serverNowISO){ serverNowStartMs = new Date(serverNowISO).getTime(); clientStartMs = Date.now(); }
   showPageLoader(false);
@@ -273,6 +290,25 @@ function msToHMS(ms){
   const ss= s%60;
   return `${h}:${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;
 }
+function cardKey(it, idx){
+  return [it.source || "", it.rowIndex ?? idx, it.party || ""].join("|");
+}
+function getRemarks(it){
+  const parts = String(it.note || "")
+    .split(/\s*\|\s*|\r?\n+/)
+    .map(x=>x.trim())
+    .filter(Boolean);
+
+  const latest = String(it.lastRemark || "").trim();
+  if(latest){
+    const same = (a,b)=>a.toLowerCase()===b.toLowerCase();
+    if(!parts.length) return [latest];
+    if(!parts.some(p=>same(p, latest))) return [latest, ...parts];
+    const reordered = [latest, ...parts.filter(p=>!same(p, latest))];
+    return reordered;
+  }
+  return parts;
+}
 
 /* ---------- RENDER ---------- */
 function render(){
@@ -297,7 +333,20 @@ function render(){
     }
 
     const dueLine = it.dueDateTime ? `<div class="meta">Due: <b>${fmtDT(it.dueDateTime)}</b></div>` : "";
-    const noteLine = it.note ? `<div class="meta">Remark: <b>${esc(it.note)}</b></div>` : "";
+    const remarks = getRemarks(it);
+    const remarkKey = cardKey(it, idx);
+    const showAllRemarks = expandedRemarks.has(remarkKey);
+    const latestRemark = remarks[0] || "";
+    const otherRemarks = remarks.slice(1);
+    const noteLine = latestRemark
+      ? `<div class="meta">Remark: <b>${esc(latestRemark)}</b></div>`
+      : "";
+    const moreRemarksLine = showAllRemarks && otherRemarks.length
+      ? `<div class="meta remark-more">${otherRemarks.map(r=>`- ${esc(r)}`).join("<br/>")}</div>`
+      : "";
+    const toggleLine = (remarks.length > 1)
+      ? `<button type="button" class="remark-toggle" data-remark-toggle>${showAllRemarks ? "Hide remarks" : "See more"}</button>`
+      : "";
     const lastLine = (it.lastAction || it.lastRemark)
       ? `<div class="meta">Last: <b>${esc(it.lastAction||"")}</b> — ${esc(it.lastRemark||"")}</div>`
       : `<div class="meta">Last: <span style="color:var(--muted)">No history</span></div>`;
@@ -313,10 +362,25 @@ function render(){
       ${dueLine}
       ${countdownLine}
       ${noteLine}
+      ${moreRemarksLine}
+      ${toggleLine}
       ${lastLine}
     `;
 
-    d.onclick = ()=> openModal(it,idx);
+    const toggleBtn = d.querySelector("[data-remark-toggle]");
+    if(toggleBtn){
+      toggleBtn.onclick = (ev)=>{
+        ev.stopPropagation();
+        if(expandedRemarks.has(remarkKey)) expandedRemarks.delete(remarkKey);
+        else expandedRemarks.add(remarkKey);
+        render();
+      };
+    }
+
+    d.onclick = (ev)=> {
+      if(ev.target.closest("[data-remark-toggle]")) return;
+      openModal(it,idx);
+    };
     g.appendChild(d);
   });
 
