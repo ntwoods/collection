@@ -212,49 +212,156 @@ function handleCred(resp){
 }
 
 /* ---------- API ---------- */
-async function api(action, payload){
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 30000);
+async function api(action, payload) {
 
-  let r;
-  try{
-    // IMPORTANT:
-    // - headers mat bhejo (esp. Content-Type: application/json)
-    // - warna browser preflight OPTIONS maarega aur Apps Script CORS pe block ho jayega
-    r = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action, idToken, payload }),
-      signal: ctrl.signal
-    });
-  } finally {
-    clearTimeout(t);
+  if (!idToken) {
+    throw new Error("Google sign-in session not available. Please sign in again.");
   }
 
-  // If Apps Script ever returns HTML error page, json parse fail hoga
-  const text = await r.text();
-  let j;
-  try{
-    j = JSON.parse(text);
-  } catch(e){
-    throw new Error("Invalid server response (not JSON). Check Apps Script deployment / URL.");
+  const isReadOnly = action === "getDashboard";
+  const maxAttempts = isReadOnly ? 2 : 1;
+
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 35000);
+
+    // Apps Script ContentService redirects to a one-time
+    // script.googleusercontent.com URL.
+    // Always use a unique request URL to avoid stale redirect reuse.
+    const requestUrl =
+      `${API_URL}?cb=${Date.now()}-${attempt}`;
+
+    try {
+
+      const response = await fetch(requestUrl, {
+        method: "POST",
+
+        // Don't set application/json Content-Type.
+        // That would trigger unnecessary CORS preflight.
+        body: JSON.stringify({
+          action,
+          idToken,
+          payload: payload ?? null
+        }),
+
+        cache: "no-store",
+        redirect: "follow",
+        credentials: "omit",
+        signal: ctrl.signal
+      });
+
+      const text = await response.text();
+      const contentType =
+        response.headers.get("content-type") || "";
+
+      let json;
+
+      try {
+        json = JSON.parse(text);
+      } catch (parseError) {
+
+        console.error("[Collection API] Non-JSON response", {
+          action,
+          attempt,
+          status: response.status,
+          statusText: response.statusText,
+          finalUrl: response.url,
+          contentType,
+          responsePreview: text.slice(0, 1000)
+        });
+
+        throw new Error(
+          `Collection server returned an invalid response ` +
+          `(HTTP ${response.status}).`
+        );
+      }
+
+      if (!json.ok) {
+        const message =
+          json?.error?.message ||
+          json?.error ||
+          "Collection API error";
+
+        throw new Error(message);
+      }
+
+      return json.data;
+
+    } catch (error) {
+
+      lastError = error;
+
+      console.error("[Collection API] Request failed", {
+        action,
+        attempt,
+        error
+      });
+
+      // Never automatically retry write/actions.
+      // Only getDashboard is safe to retry.
+      if (attempt >= maxAttempts) {
+
+        if (error?.name === "AbortError") {
+          throw new Error(
+            "Collection server took too long to respond. Please retry."
+          );
+        }
+
+        throw error;
+      }
+
+      // Tiny delay before the one safe dashboard retry.
+      await new Promise(resolve => setTimeout(resolve, 350));
+
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
-  if(!j.ok) throw new Error((j.error && (j.error.message || j.error)) || "API error");
-  return j.data;
+  throw lastError || new Error("Collection API request failed.");
 }
 
-
 /* ---------- LOAD DASHBOARD ---------- */
-async function load(){
+async function load() {
+
+  if (!idToken) return;
+
   showPageLoader(true);
-  const data = await api("getDashboard");
-  items = data.items || [];
-  expandedRemarks.clear();
-  serverNowISO = data.now || null;
-  if(serverNowISO){ serverNowStartMs = new Date(serverNowISO).getTime(); clientStartMs = Date.now(); }
-  showPageLoader(false);
-  render();
-  startPerCardTick();
+
+  try {
+
+    const data = await api("getDashboard");
+
+    items = data.items || [];
+    expandedRemarks.clear();
+
+    serverNowISO = data.now || null;
+
+    if (serverNowISO) {
+      serverNowStartMs = new Date(serverNowISO).getTime();
+      clientStartMs = Date.now();
+    }
+
+    render();
+    startPerCardTick();
+
+  } catch (error) {
+
+    console.error("[Collection Portal] Dashboard load failed", error);
+
+    alert(
+      error?.message ||
+      "Unable to load Collection dashboard."
+    );
+
+  } finally {
+
+    showPageLoader(false);
+
+  }
 }
 
 /* ---------- FORCE SCHEDULE ---------- */
